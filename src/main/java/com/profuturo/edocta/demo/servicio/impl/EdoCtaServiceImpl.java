@@ -9,7 +9,9 @@ import com.profuturo.edocta.demo.excepciones.NotFoundException;
 import com.profuturo.edocta.demo.excepciones.ServerUnavailableException;
 import com.profuturo.edocta.demo.modelos.entrada.ActualizarMovimientosIn;
 import com.profuturo.edocta.demo.modelos.entrada.GuardarMovimientosIn;
+import com.profuturo.edocta.demo.modelos.entrada.GuardarMovimientosTransitionalIn;
 import com.profuturo.edocta.demo.modelos.salida.MovimientosOut;
+import com.profuturo.edocta.demo.modelos.salida.MovimientosTransitionalOut;
 import com.profuturo.edocta.demo.servicio.EdoCtaService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -119,6 +121,53 @@ public class EdoCtaServiceImpl implements EdoCtaService {
 		} catch (NoAuthException e) {
 			throw new NoAuthException(
 					"No se tiene autorizacion para consumir el servicio Actualizar Movimientos");
+		} catch (Throwable e) {
+			if (e.getClass() == RetryableException.class) {
+				throw new ServerUnavailableException(
+						"No se logró establecer conexion con el servicio Movimientos");
+			} else {
+				throw new Exception("Hubo un error interno: " + e.getCause().getMessage());
+			}
+		} finally {
+			logger.info("Fin Servicio Movimientos Impl");
+		}
+
+		return retorno;
+	}
+
+	@Override
+	public List<MovimientosTransitionalOut> consultarMovimientosTransitional(String numCuenta) throws NotFoundException, BadRequestException, NoAuthException, ServerUnavailableException, Exception {
+		logger.info("consultarMovimientosTransitional Service Impl"+numCuenta);
+		List<MovimientosTransitionalOut> retorno=new ArrayList<MovimientosTransitionalOut>();
+		try {
+
+			retorno=EdoCtaResponseDao.getMovimientosDaoTransitional(numCuenta);
+			if(retorno.size()==0){
+				throw new NotFoundException("No se encontró resultado");
+			}
+		} catch (Exception e) {
+
+
+		}
+
+		return retorno;
+	}
+
+	@Override
+	public long guardarMovimientosTransitional(GuardarMovimientosTransitionalIn in) throws NotFoundException, BadRequestException, NoAuthException, ServerUnavailableException, Exception {
+		long retorno=0;
+		try {
+
+				retorno=EdoCtaResponseDao.insertMovimientosResponseTransitionalIn(in);
+
+		} catch (NotFoundException e) {
+			throw new NotFoundException("No se encontró el recurso solicitado");
+		} catch (BadRequestException e) {
+			throw new BadRequestException(
+					"El cuerpo de la solicitud al servicio Guardar Movimientos no es el esperado");
+		} catch (NoAuthException e) {
+			throw new NoAuthException(
+					"No se tiene autorizacion para consumir el servicio Guardar Movimientos");
 		} catch (Throwable e) {
 			if (e.getClass() == RetryableException.class) {
 				throw new ServerUnavailableException(

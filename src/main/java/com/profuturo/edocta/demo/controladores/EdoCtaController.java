@@ -14,8 +14,10 @@ import com.profuturo.edocta.demo.modelos.ErrorResponse;
 import com.profuturo.edocta.demo.modelos.RequestBiometriaFacial;
 import com.profuturo.edocta.demo.modelos.entrada.ActualizarMovimientosIn;
 import com.profuturo.edocta.demo.modelos.entrada.GuardarMovimientosIn;
+import com.profuturo.edocta.demo.modelos.entrada.GuardarMovimientosTransitionalIn;
 import com.profuturo.edocta.demo.modelos.salida.GuardarMovimientosOut;
 import com.profuturo.edocta.demo.modelos.salida.MovimientosOut;
+import com.profuturo.edocta.demo.modelos.salida.MovimientosTransitionalOut;
 import com.profuturo.edocta.demo.servicio.EdoCtaService;
 import com.profuturo.edocta.demo.util.UtilConversor;
 import io.swagger.annotations.ApiResponse;
@@ -130,6 +132,71 @@ public class EdoCtaController  extends UtilConversor {
 		}
 	}
 
+	@ApiResponses(value = { @ApiResponse(code = 200, message = "OK", response = MovimientosTransitionalOut.class),
+			@ApiResponse(code = 400, message = "BAD REQUEST", response = ResponseError.class),
+			@ApiResponse(code = 401, message = "UNAUTHORIZED", response = ResponseError.class),
+			@ApiResponse(code = 404, message = "NOT FOUND", response = ResponseError.class),
+			@ApiResponse(code = 500, message = "INTERNAL SERVER ERROR", response = ResponseError.class),
+			@ApiResponse(code = 503, message = "SERVICE UNAVAILABLE", response = ResponseError.class) })
+	@GetMapping(value = "/movimientosTransitional/{numeroCuenta}")
+	public ResponseEntity<List<MovimientosTransitionalOut>> getMovimientosTransitional(@PathVariable("numeroCuenta") String numeroCuenta){
+		logger.info("Request: " + numeroCuenta);
+		if (numeroCuenta == null) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Parametro numeroCuenta es Obligatorio.");
+		}
+		try {
+			List<MovimientosTransitionalOut> responseconsultarMovimientos  = EdoCtaService.consultarMovimientosTransitional(numeroCuenta);
+			logger.info("Response[200]: " + "");
+			return ResponseEntity.ok(responseconsultarMovimientos);
+		} catch (BadRequestException e) {
+			logger.warn("Response[400]: " + e.getMessage());
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+		} catch (NoAuthException e) {
+			logger.warn("Response[401]: " + e.getMessage());
+			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, e.getMessage(), e);
+		} catch (NotFoundException e) {
+			logger.warn("Response[404]: " + e.getMessage());
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
+		} catch (ServerUnavailableException e) {
+			logger.warn("Response[503]: " + e.getMessage());
+			throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, e.getMessage(), e);
+		} catch (Exception e) {
+			logger.warn("Response[500]: " + e.getMessage());
+			throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e);
+		}
+
+	}
+
+	@ApiResponses(value = { @ApiResponse(code = 200, message = "OK", response = GuardarMovimientosOut.class),
+			@ApiResponse(code = 400, message = "BAD REQUEST", response = ResponseError.class),
+			@ApiResponse(code = 401, message = "UNAUTHORIZED", response = ResponseError.class),
+			@ApiResponse(code = 404, message = "NOT FOUND", response = ResponseError.class),
+			@ApiResponse(code = 500, message = "INTERNAL SERVER ERROR", response = ResponseError.class),
+			@ApiResponse(code = 503, message = "SERVICE UNAVAILABLE", response = ResponseError.class) })
+	@PostMapping(value = "/guardarMovimientoTransitional")
+	public ResponseEntity<GuardarMovimientosOut> guardarMovimientoTransitional(@RequestBody GuardarMovimientosTransitionalIn in){
+		GuardarMovimientosOut retorno=new GuardarMovimientosOut();
+		String errors = this.validaratributosderequestTrans(in);
+		if (errors != null) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, errors);
+		}
+		try {
+			Long responseGuardar = EdoCtaService.guardarMovimientosTransitional(in);
+			if(responseGuardar==1){
+				retorno.setResultado(true);
+			}else{
+				retorno.setResultado(false);
+			}
+			logger.info("RequestID: " + in + " Response[200]: Exitoso");
+			return ResponseEntity.ok(retorno);
+		} catch (Exception e) {
+			logger.error(" Request[409]:  -> Los datos introducidos no generan");
+			logger.error(e.getMessage());
+			throw new ResponseStatusException(HttpStatus.CONFLICT,
+					"Ocurrió un error al almacenar la información introducida", e);
+		}
+	}
+
 	private String validaratributosderequest(GuardarMovimientosIn in) {
 		ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
 		Validator validator = factory.getValidator();
@@ -143,4 +210,16 @@ public class EdoCtaController  extends UtilConversor {
 		return null;
 	}
 
+	private String validaratributosderequestTrans(GuardarMovimientosTransitionalIn in) {
+		ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+		Validator validator = factory.getValidator();
+		Set<ConstraintViolation<GuardarMovimientosTransitionalIn>> constraintViolations = validator.validate(in);
+		if (constraintViolations.size() > 0) {
+			List<String> errorMessages = constraintViolations.stream().map(constrain -> constrain.getMessage())
+					.collect(Collectors.toList());
+			logger.warn("Response[400]: Algunos campos no cumplen con las validaciones " + errorMessages);
+			return errorMessages.get(0);
+		}
+		return null;
+	}
 }

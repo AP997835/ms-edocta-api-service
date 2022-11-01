@@ -1,5 +1,6 @@
 package com.profuturo.edocta.demo.dao.impl;
 
+import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -10,7 +11,9 @@ import com.profuturo.edocta.demo.excepciones.NotFoundException;
 import com.profuturo.edocta.demo.excepciones.SQLInsertarException;
 import com.profuturo.edocta.demo.modelos.entrada.ActualizarMovimientosIn;
 import com.profuturo.edocta.demo.modelos.entrada.GuardarMovimientosIn;
+import com.profuturo.edocta.demo.modelos.entrada.GuardarMovimientosTransitionalIn;
 import com.profuturo.edocta.demo.modelos.salida.MovimientosOut;
+import com.profuturo.edocta.demo.modelos.salida.MovimientosTransitionalOut;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,11 +35,17 @@ public class EdoCtaResponseDaoImpl implements EdoCtaResponseDao {
 	@Value("${movimientos.insertMovimientoResponse}")
 	private String INSERT_MOVIMIENTOS_RESPONSE;
 
+	@Value("${movimientos.insertMovimientoResponseTrans}")
+	private String INSERT_MOVIMIENTOS_RESPONSE_TRANS;
+
 	@Value("${movimientos.actualizarMovimientoResponse}")
 	private String ACTUALIZAR_MOVIMIENTOS_RESPONSE;
 
 	@Value("${selectMovimientos}")
 	private String SELECT_MOVIMIENTOS_NUMCUENTA;
+
+	@Value("${selectMovimientosTrans}")
+	private String SELECT_MOVIMIENTOS_NUMCUENTA_TRANSTIONAL;
 
 	@Value("${selectIdClientezXnumCuenta}")
 	private String SELECT_ID_PERSONA_NUM_CUENTA;
@@ -114,6 +123,46 @@ public class EdoCtaResponseDaoImpl implements EdoCtaResponseDao {
 		} catch (RuntimeException e) {
 			logger.error("ERROR - Ocurrio un error al actualizar el movimientos en la BD: " + e.getMessage());
 			throw new SQLInsertarException("Ocurrio un error al actualizar el movimiento en la BD");
+		}
+		return exito;
+	}
+
+	@Override
+	public List<MovimientosTransitionalOut> getMovimientosDaoTransitional(String numCuenta) throws SQLInsertarException {
+		List<MovimientosTransitionalOut> resultado = null;
+		try {
+			resultado = jdbcAut.query(SELECT_MOVIMIENTOS_NUMCUENTA_TRANSTIONAL, new Object[] { numCuenta },  new RowMapper<MovimientosTransitionalOut>()  {
+				@Override
+				public MovimientosTransitionalOut mapRow(ResultSet rs, int rowNum) throws SQLException {
+					MovimientosTransitionalOut configrespuesta = new MovimientosTransitionalOut();
+					configrespuesta.setId_movimiento(rs.getLong("ID_MOVIMIENTO"));
+					configrespuesta.setSald_numcu(rs.getString("SALD_NUMCUE"));
+					configrespuesta.setMov_concepto(rs.getString("MOV_CONCEPTO"));
+					configrespuesta.setMov_fecha(rs.getString("MOV_FECHA"));
+					configrespuesta.setMov_monto(new BigDecimal(rs.getLong("MOV_MONTO")));
+					return configrespuesta;
+				}
+			});
+			if (resultado == null) {
+				throw new RuntimeException("No se logró encontrar movimientos asociados " + numCuenta);
+			}
+			return resultado;
+		} catch (RuntimeException e) {
+			logger.error("ERROR - Ocurrio un error al obtener la movimientos de la BD: " + e.getMessage());
+			throw new SQLInsertarException("Ocurrio un error al obtener movimientos de la BD");
+		}
+	}
+
+	@Override
+	public int insertMovimientosResponseTransitionalIn(GuardarMovimientosTransitionalIn in) throws SQLInsertarException {
+		int exito = 0;
+		try {
+			exito = jdbcAut.update(INSERT_MOVIMIENTOS_RESPONSE_TRANS,
+					new Object[] { in.getNumeroCuenta(), in.getConcepto(),
+							in.getMonto()});
+		} catch (RuntimeException e) {
+			logger.error("ERROR - Ocurrio un error al insertar el movimientos en la BD: " + e.getMessage());
+			throw new SQLInsertarException("Ocurrio un error al insertar el movimiento en la BD");
 		}
 		return exito;
 	}
