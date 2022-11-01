@@ -8,11 +8,13 @@
         <outputRelativeToContentRoot value="true" />
         <module name="ms-gestion-biometria-facial" />
         <module name="ms-edocta-demo" />
+        <module name="ms-edocta-api-service" />
       </profile>
     </annotationProcessing>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="ms-edocta-api-service" options="-parameters" />
       <module name="ms-edocta-demo" options="-parameters" />
       <module name="ms-gestion-biometria-facial" options="-parameters" />
     </option>
