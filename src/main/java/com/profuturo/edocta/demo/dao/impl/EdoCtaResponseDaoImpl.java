@@ -56,7 +56,7 @@ public class EdoCtaResponseDaoImpl implements EdoCtaResponseDao {
 	public List<MovimientosOut> getMovimientosDao(String numCuenta) throws SQLInsertarException {
 		List<MovimientosOut> resultado = null;
 		try {
-			resultado = jdbcAut.query(SELECT_MOVIMIENTOS_NUMCUENTA, new Object[] { numCuenta },  new RowMapper<MovimientosOut>()  {
+			resultado = jdbcAut.query(SELECT_MOVIMIENTOS_NUMCUENTA, new Object[] { numCuenta,numCuenta},  new RowMapper<MovimientosOut>()  {
 				@Override
 				public MovimientosOut mapRow(ResultSet rs, int rowNum) throws SQLException {
 					MovimientosOut configrespuesta = new MovimientosOut();
